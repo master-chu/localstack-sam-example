@@ -1,0 +1,23 @@
+version: '3.9'
+services:
+    aws:
+        build: ./aws
+        environment:
+            - SERVICES=s3,lambda,apigateway,cloudformation,iam # minimum needed to deploy a SAM app
+            - LAMBDA_EXECUTOR=docker                           # lambda will fail to execute without this explicitly set
+            - DOCKER_HOST=unix:///var/run/docker.sock          # docker is running inside localstack
+        ports:
+            - 4563-4599:4563-4599
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+    api:
+        build: ./api
+        depends_on:
+            - aws
+        volumes:
+            - ./api:/opt/api
+        environment:
+            - SAM_CLI_TELEMETRY=0           # samlocal tries to call out to telemetry service before deploy
+            - LOCALSTACK_HOSTNAME=aws       # changed from 'localhost' because we're running samlocal on a different container
+            - AWS_ACCESS_KEY_ID=test
+            - AWS_SECRET_ACCESS_KEY=test
